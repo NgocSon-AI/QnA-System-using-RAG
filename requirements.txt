@@ -1,0 +1,13 @@
+qdrant_client
+loguru
+torch
+transformers
+pydantic
+python-dotenv
+requests
+pydantic_settings
+streamlit
+groq
+einops
+PyPDF2
+PyMuPDF
