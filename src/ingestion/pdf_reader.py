@@ -1,59 +1,80 @@
 from pathlib import Path
 from typing import List
-import fitz  # PyMuPDF
+
 from src.utils.logger import Logger
 
 
+try:
+    import fitz  # PyMuPDF
+
+    _HAS_FITZ = True
+except Exception:
+    _HAS_FITZ = False
+
+try:
+    import PyPDF2
+
+    _HAS_PYPDF2 = True
+except Exception:
+    _HAS_PYPDF2 = False
+
+
 class PDFReader:
-    """
-    Class đọc PDF và xuất ra list các page text.
+    """Read PDF and return a list of page texts.
+
+    The reader will try PyMuPDF first (faster and more reliable), and fall back
+    to PyPDF2 if PyMuPDF is not available or fails for a specific file.
     """
 
-    def __init__(self, log_name: str = "PDFReader"):
-        """_summary_
-
-        Args:
-            log_name (str, optional): _description_. Defaults to "PDFReader".
-        """
+    def __init__(self, log_name: str = "PDFReader") -> None:
         self.logger = Logger(name=log_name).get_logger()
 
     def read_pdf(self, file_path: str) -> List[str]:
-        """
-        Đọc PDF và trả về list các trang text.
-
-        Args:
-            file_path (str): đường dẫn file PDF
-
-        Returns:
-            List[str]: list các trang text
-        """
-        file_path = Path(file_path)
-        if not file_path.exists() or file_path.suffix.lower() != ".pdf":
-            self.logger.error(f"File PDF không tồn tại hoặc không hợp lệ: {file_path}")
+        path = Path(file_path)
+        if not path.exists() or path.suffix.lower() != ".pdf":
+            self.logger.error("File PDF không tồn tại hoặc không hợp lệ: %s", file_path)
             return []
 
-        self.logger.info(f"Đang đọc file PDF: {file_path}")
-        pages_text = []
+        # Try PyMuPDF first
+        if _HAS_FITZ:
+            try:
+                self.logger.info("Đang đọc PDF với PyMuPDF: %s", file_path)
+                pages: List[str] = []
+                with fitz.open(path) as pdf:
+                    for p in pdf:
+                        try:
+                            pages.append(p.get_text() or "")
+                        except Exception:
+                            pages.append("")
+                return pages
+            except Exception as e:
+                self.logger.warning("PyMuPDF failed (%s), falling back to PyPDF2", e)
 
-        try:
-            with fitz.open(file_path) as pdf:
-                self.logger.info(f"Số trang trong PDF: {pdf.page_count}")
-                for i, page in enumerate(pdf):
-                    text = page.get_text()
-                    pages_text.append(text)
-                    self.logger.debug(f"Đã đọc trang {i+1} / {pdf.page_count}")
-        except Exception as e:
-            self.logger.exception(f"Lỗi khi đọc PDF: {file_path} - {e}")
+        # Fallback to PyPDF2
+        if _HAS_PYPDF2:
+            try:
+                self.logger.info("Đang đọc PDF với PyPDF2: %s", file_path)
+                pages = []
+                with open(path, "rb") as f:
+                    reader = PyPDF2.PdfReader(f)
+                    for p in reader.pages:
+                        try:
+                            pages.append(p.extract_text() or "")
+                        except Exception:
+                            pages.append("")
+                return pages
+            except Exception as e:
+                self.logger.exception("PyPDF2 failed to read PDF: %s", e)
 
-        self.logger.info(f"Đọc xong file PDF: {file_path}")
-        return pages_text
+        self.logger.error("No PDF reader available (install pymupdf or pypdf2)")
+        return []
 
 
-# 🔹 Test nhanh khi chạy trực tiếp
 if __name__ == "__main__":
     reader = PDFReader()
-    pdf_file = "./data/raw/bao_cao_ imagecaptioning.pdf"
+    pdf_file = "data/raw/bao_cao_ imagecaptioning.pdf"
     texts = reader.read_pdf(pdf_file)
+
     for i, page_text in enumerate(texts):
-        print(f"--- Page {i+1} ---")
-        print(page_text[:200])  # chỉ show 200 ký tự đầu
+        print(f"\n--- PAGE {i + 1} ---")
+        print(page_text[:200].strip() or "[Trang trống]")

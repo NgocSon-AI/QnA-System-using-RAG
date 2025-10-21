@@ -11,3 +11,5 @@ groq
 einops
 PyPDF2
 PyMuPDF
+tiktoken
+rank-bm25

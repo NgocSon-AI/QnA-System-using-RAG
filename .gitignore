@@ -209,3 +209,10 @@ __marimo__/
 
 data/
 data
+
+template/
+template
+qdrant_data/
+
+tests/
+tests

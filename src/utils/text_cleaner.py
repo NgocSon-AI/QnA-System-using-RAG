@@ -21,9 +21,9 @@ class TextCleaner:
         if not text:
             return ""
 
-        # 1️⃣ Remove nhiều khoảng trắng
+        # 1 Remove nhiều khoảng trắng
         text = re.sub(r"\s+", " ", text)
-        # 2️⃣ Remove số trang dạng "Page 1/10"
+        # 2 Remove số trang dạng "Page 1/10"
         text = re.sub(r"Page \d+/\d+", "", text, flags=re.IGNORECASE)
-        # 3️⃣ Strip đầu cuối
+        # 3 Strip đầu cuối
         return text.strip()

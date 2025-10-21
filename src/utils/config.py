@@ -1,30 +1,36 @@
 from functools import lru_cache
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from dataclasses import dataclass
+from dotenv import load_dotenv
+import os
+
+# Load toàn bộ biến môi trường từ file .env
+load_dotenv()
 
 
-class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=".env", extra="ignore", env_file_encoding="utf-8"
-    )
-    # ==================== GROQ CONFIG ====================
-    GROQ_API_KEY: str
+@dataclass
+class Settings:
+    # GROQ / LLM
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
     GROQ_MODEL_NAME: str = "meta-llama/llama-4-scout-17b-16e-instruct"
 
-    PDF_PATH: str = "bao_cao_ imagecaptioning.pdf"
+    # PDF
+    PDF_PATH: str = "data/raw/bao_cao_imagecaptioning.pdf"
 
+    # Qdrant
     QDRANT_HOST: str = "localhost"
     QDRANT_PORT: int = 6333
+    QDARNT_DISTANCE: str = "cosine"
     COLLECTION_NAME: str = "pdf_documents"
+    VECTOR_SIZE: int = 768
 
-    CHUNK_SIZE: int = 500  # Số ký tự mỗi chunk
-    CHUNK_OVERLAP: int = 100  # Số ký tự overlap giữa các chunk
+    CHUNK_SIZE: int = 400
+    CHUNK_OVERLAP: int = 50
 
+    # Embedding / device
     JINA_MODEL_NAME: str = "Alibaba-NLP/gte-multilingual-base"
     JINA_TASK: str = "retrieval.passage"
-
-    DEVICE: str = "cpu"  # Đổi thành "cuda" nếu có GPU
-
-    # =====================================================
+    MODEL_TOKEN_NAME: str = "text-embedding-3-small"
+    DEVICE: str = "cpu"
 
 
 @lru_cache(maxsize=1)
